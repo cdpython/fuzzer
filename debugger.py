@@ -25,7 +25,7 @@ class debugger():
         startupinfo.dwFlags     = 0x1
         startupinfo.wShoWindow  = 0x0
 
-        #다음에는 STARTUPINFO struct 구조체를 자신의 크기를 나타내는 cb 변수값을 초기화
+        #다음에는 STARTUPINFO struct 구조체를 자신의 크기를 나타내는 cb 변수 값을 초기화
         startupinfo.cb = sizeof(startupinfo)
 
         if kernel32.CreateProcessA(path_to_exe,
