@@ -13,7 +13,8 @@ import time
 
 class file_fuzzer:
     def __init__(self, exe_path):
-
+        self.mutate_count = 20
+        self.mutate_list = None
         self.exe_path = exe_path
         self.ext = ".hwp"
         self.orig_file = None
@@ -44,9 +45,12 @@ class file_fuzzer:
 
             self.running = True
 
+            print "[*] Starting debugger for iteration: %d" % self.count
+
             # 먼저 변형을 가할 파일을 선택한다.
             self.file_picker()
             self.mutate_file()
+
 
             # 디버거 쓰레드 실행
             pydbg_thread = threading.Thread(target=self.start_debugger)
@@ -68,7 +72,7 @@ class file_fuzzer:
     # 대상 어플리케이션을 실행시키는 디버거 쓰레드
     def start_debugger(self):
 
-        print "[*] Starting debugger for iteration: %d" % self.count
+        
         self.running = True
         self.dbg = pydbg()
 
@@ -83,10 +87,10 @@ class file_fuzzer:
     def monitor_debugger(self):
 
         counter = 0
-        print "[*] waiting " % self.pid,
+        print "[*] waiting ",
         while counter < 3:
             time.sleep(1)
-            print "."
+            print ".",
             counter += 1
         print "[*] countinue"
         print "\n"
@@ -127,6 +131,10 @@ class file_fuzzer:
         # 에러 정보를 작성한다.
         crash_fd = open("crash\\crash-%d.log" % self.count,"w")
         crash_fd.write(self.crash)
+        crash_fd.write("----------------- mutate log -------------------\n")
+        crash_fd.write(self.mutate_list)
+        crash_fd.write("\n\nEND")
+        crash_fd.close()
 
         # 파일을 백업한다.
         shutil.copy(self.tmp_file, "crash\\%d%s" % (self.count,self.ext))
@@ -140,20 +148,23 @@ class file_fuzzer:
 
     def mutate_file( self ):
 
+        print "[*] Selected file : %s" % self.orig_file
+
+        self.mutate_list = ""
         fd = open(self.tmp_file, "r+b")
         stream = fd.read()
         stream_length = len(stream)
-        # 반복 횟수 랜덤 설정 
-        count = random.randint(1,10)
         # 테스트 케이스 중에 하나를 고른다
         attack = ['\x00', '\x41', '\xff']
-        mutate = random.choice(attack)
+        
 
-        for i in range(count):
+        for i in range(self.mutate_count):
             
             rand_offset   = random.randint(0,  stream_length - 1 )
-
-            print "Mutated : offset[%d] , %x" %(rand_offset, ord(mutate))
+            mutate = random.choice(attack)
+            mutate = mutate * random.randint(1,4)
+            self.mutate_list += "Mutated : offset[0x%X] , 0x%s\n" %(rand_offset, mutate.encode('hex'))
+            print "Mutated : offset[0x%X] , 0x%s" %(rand_offset, mutate.encode('hex'))
             # 테스트 케이스 반복
             # 저장
             fd.seek(rand_offset)
@@ -166,8 +177,11 @@ class file_fuzzer:
 if __name__ == "__main__":
 
     print "[*] File Fuzzer."
+    if os.path.exists("C:\\Program Files (x86)\\Hnc\\Hwp80\\Hwp.exe"):
+        exe_path = "C:\\Program Files (x86)\\Hnc\\Hwp80\\Hwp.exe"
+    else:
+        exe_path = "C:\\Program Files\\Hnc\\Hwp80\\Hwp.exe"
 
-    exe_path = "C:\\Program Files (x86)\\Hnc\\Hwp80\\Hwp.exe"
     ext      = "hwp"
 
     if exe_path is not None:
