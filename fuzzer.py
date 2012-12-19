@@ -12,7 +12,7 @@ import time
 
 class file_fuzzer:
     def __init__(self, exe_path):
-        self.mutate_count       = 100
+        self.mutate_count       = 50
         self.mutate_list            = []
         self.selected_list          = [] # 크래시 트래킹에 사용할 리스트
         self.exe_path           = exe_path
@@ -201,16 +201,23 @@ class file_fuzzer:
 
     def mutate_track( self ):
 
-        print "[*] tracking Selected file : %s" % self.orig_file
-        print "[+] Mutate list %d" % len(self.mutate_list)
-
-        # 뮤테이션 리스트 원소의 갯수가 3개보다 적으면 수행 할 루틴
-        if len(self.mutate_list) < 3:
+        # 뮤테이션 리스트 원소의 갯수가 5개보다 적으면 수행 할 루틴
+        if len(self.mutate_list) < 5:
             print "[ ^^ ] tracking Finished! %d -> %d" % (self.mutate_count, len(self.mutate_list))
+            # 크래시 파일 백업
+            shutil.copy(self.tmp_file, "crash\\%d%s" % (self.crash_count,self.ext))
+
+            f= open("crash\\%d%s" % (self.crash_count,self.ext),'r+b')
+            for i in self.mutate_list:
+                f.seek(i[0])
+                f.write(chr(int(i[1][:2],16)) * (len(i[1])/2))
+            f.close()
             # 각종 변수 초기화
             self.crash_tracking = False
             self.crash_again = False
             self.crash_tracking_step = 0
+            self.selected_list = []
+            self.pivot = 0
             # 로그 추가 기록
             f = open("crash\\crash-%d.log" % self.crash_count, 'a')
             f.write("\n\n---------------- Check this Offset!! ------------------\n\n")
@@ -221,9 +228,9 @@ class file_fuzzer:
                 f.write("\n")
             f.write("\n\nEND")
             f.close()
-            # 크래시 파일 백업
-            shutil.copy(self.tmp_file, "crash\\%d%s" % (self.crash_count,self.ext))
+            
             return
+
 
         # 수정할 파일 오픈 
         f = open(self.tmp_file, 'r+b')
@@ -242,6 +249,11 @@ class file_fuzzer:
             self.mutate_list = self.selected_list
             # 크래시가 나면 새로운 피봇 설정
             self.pivot = self.mutate_list.index(random.choice(self.mutate_list))
+            self.check = False
+
+
+        print "[*] tracking Selected file : %s" % self.orig_file
+        print "[+] Mutate list %d" % len(self.mutate_list)
 
         #크래시가 안났으면 기존 피봇 사용
         pivot = self.pivot
@@ -252,12 +264,12 @@ class file_fuzzer:
 
         # 리스트 선택
         if self.check == False:
-            #print "left"
+            print "left"
             self.selected_list = left
             #체크 변수 토글
             self.check = True
         else:
-            #print "right"
+            print "right"
             self.selected_list = right
             #체크 변수 토글
             self.check = False
