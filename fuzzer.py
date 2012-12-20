@@ -218,7 +218,7 @@ class file_fuzzer:
                 self.pivot = 0
 
             # 트래킹 카운트가 비 정상이면 강제 종료(무한루프 방지)
-            if self.tracking_count == self.mutate_count/2:
+            if self.tracking_count == 30:
                 print "[T.T] tracking Fail... re-Try!"
                 return DBG_EXCEPTION_NOT_HANDLED
 
