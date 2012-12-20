@@ -9,7 +9,6 @@ import os
 import shutil
 import time
 
-
 class file_fuzzer:
     def __init__(self, exe_path):
         self.mutate_count        = 50
@@ -26,7 +25,6 @@ class file_fuzzer:
         self.crash               = None
         self.crash_tracking      = False # 크래시 추적 활성화 체크
         self.crash_tracking_step = 0 # 크래시 추적 단계 설정
-        #self.crash_again    = False # 크래시 여부 체크
         self.pivot               = None # 랜덤 인덱스 저장을 위한 변수
         self.crash_count         = None # 크래시 번호 저장
         self.check               = False
@@ -98,7 +96,7 @@ class file_fuzzer:
 
         counter = 0
         print "[*] waiting ",
-        while counter < 3 and pid != None:
+        while counter < 3 and self.pid != None:
             time.sleep(1)
             print ".",
             counter += 1
@@ -127,21 +125,22 @@ class file_fuzzer:
 
     # 에러를 추적하고 정보를 저장하기 위한 접근 위반 핸들러 
     def check_accessv(self, dbg):
-
-        # 중복된 크래시 인지 체크
-        if self.dbg.context.Eip in self.eip_list:
-            print "\n[ x ] Duplicate Crash!!"
-            self.in_accessv_handler = False
-            self.dbg.terminate_process()
-            self.pid = None
-
-            return DBG_EXCEPTION_NOT_HANDLE
-
-        # eip 리스트에 추가
-        self.eip_list.append(self.dgb.context.Eip)
         
         # 트래킹 활성화 여부 체크
         if self.crash_tracking == False:
+
+            # 중복된 크래시 인지 체크
+            if self.dbg.context.Eip in self.eip_list:
+                print "\n[ x ] Duplicate Crash!!"
+                self.in_accessv_handler = False
+                self.dbg.terminate_process()
+                self.pid = None
+
+                return DBG_EXCEPTION_NOT_HANDLED
+
+            # eip 리스트에 추가
+            self.eip_list.append(self.dbg.context.Eip)
+
             # 트래킹 활성화
             self.crash_tracking = True
             self.in_accessv_handler = True
@@ -161,7 +160,6 @@ class file_fuzzer:
             crash_fd.write("----------------- mutate log -------------------\n")
             for i in self.mutate_list:
                 crash_fd.write("offset : "+ hex(i[0])+", 0x"+i[1] + "\n" )
-            #crash_fd.write("\n\nEND")
             crash_fd.close()
 
             # 원본 파일을 백업한다.
@@ -174,9 +172,6 @@ class file_fuzzer:
 
         # 트래킹 활성화 시 수행할 루틴 
         else:
-            
-            #print "[+] Crash Tracking..."
-            #self.crash_again = True
             
             #접근위반 핸들러 활성화
             self.in_accessv_handler = True
@@ -194,17 +189,11 @@ class file_fuzzer:
             print "[+] Mutate list count -- %d" % len(self.mutate_list)
 
              # 뮤테이션 리스트 원소의 갯수가 5개보다 적으면 수행 할 루틴
-            if len(self.mutate_list) <5:
+            if len(self.mutate_list) == 1:
                 print "[ ^^ ] tracking Finished! %d -> %d" % (self.mutate_count, len(self.mutate_list))
                 # 크래시 파일 백업
                 shutil.copy(self.tmp_file, "crash\\crash_%d%s" % (self.crash_count,self.ext))
-                """
-                f= open("crash\\%d%s" % (self.crash_count,self.ext),'r+b')
-                for i in self.mutate_list:
-                    f.seek(i[0])
-                    f.write(chr(int(i[1][:2],16)) * (len(i[1])/2))
-                f.close()
-                """
+
                 # 로그 추가 기록
                 f = open("crash\\crash-%d.log" % self.crash_count, 'a')
                 f.write("\n\n---------------- Check this Offset!! ------------------\n\n")
