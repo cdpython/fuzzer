@@ -24,8 +24,6 @@ class file_fuzzer:
         self.count               = 0
         self.crash               = None
         self.crash_tracking      = False # 크래시 추적 활성화 체크
-        self.crash_tracking_step = 0 # 크래시 추적 단계 설정
-        self.pivot               = None # 랜덤 인덱스 저장을 위한 변수
         self.crash_count         = None # 크래시 번호 저장
         self.tracking_count      = 0 # 트래킹 카운트 저장(무한루프 방지)
         self.check               = False
@@ -178,19 +176,17 @@ class file_fuzzer:
             self.in_accessv_handler = True
             self.dbg.terminate_process()
             self.pid = None
-            # 트래킹하는 카운트 증가
-            self.tracking_count+=1
             
             print "[+] crash Again!!"
             # 크래시 난 리스트를 뮤테이션 리스트에 넣는다.
             self.mutate_list = self.selected_list
             
             # 크래시가 나면 새로운 피봇 설정
-            self.pivot = self.mutate_list.index(random.choice(self.mutate_list))
+            # self.pivot = self.mutate_list.index(random.choice(self.mutate_list))
             
             # 피봇이 처음이거나 끝이면 다시 설정
-            if self.pivot == 0 or self.pivot == len(self.mutate_list)-1:
-                self.pivot = self.mutate_list.index(random.choice(self.mutate_list))
+            # if self.pivot == 0 or self.pivot == len(self.mutate_list)-1:
+            #    self.pivot = self.mutate_list.index(random.choice(self.mutate_list))
                 
             self.check = False
 
@@ -216,11 +212,6 @@ class file_fuzzer:
                 self.crash_tracking_step = 0
                 self.selected_list = []
                 self.pivot = 0
-
-            # 트래킹 카운트가 비 정상이면 강제 종료(무한루프 방지)
-            if self.tracking_count == 30:
-                print "[T.T] tracking Fail... re-Try!"
-                return DBG_EXCEPTION_NOT_HANDLED
 
             return DBG_EXCEPTION_NOT_HANDLED
 
@@ -251,7 +242,7 @@ class file_fuzzer:
         return
 
     def mutate_track( self ):
-
+        """
         # 트래킹이 처음 스탭일때(0) 수행
         if self.crash_tracking_step == 0:
             # 트래킹 카운트 초기화
@@ -263,9 +254,19 @@ class file_fuzzer:
                 self.pivot = self.mutate_list.index(random.choice(self.mutate_list))
             # 트래킹 스탭 1로 설정
             self.crash_tracking_step = 1
+        """
+        # 트래킹하는 카운트 증가
+        self.tracking_count+=1
+            
+        pivot = len(self.mutate_list)/2
 
-        #크래시가 안났으면 기존 피봇 사용
-        pivot = self.pivot
+        # 트래킹 카운트가 비 정상이면 강제 종료(무한루프 방지)
+        if self.tracking_count > 20:
+            print "[T.T] tracking Fail... re-Try!"
+            self.crash_tracking = False
+            self.selected_list = []
+            self.tracking_count = 0
+            return
         
         # 피봇을 기준으로 좌우로 나눈다.
         left = self.mutate_list[:pivot]
@@ -288,13 +289,13 @@ class file_fuzzer:
         
         #tmp 파일에 쓰기
         for i in self.selected_list:
-            print i[0], i[1]
+            #print i[0], i[1]
             f.seek(i[0])
             f.write(chr(int(i[1][:2],16)) * (len(i[1])/2))
         f.close()
+
+
         
-        # 크래시 체크 변수 off
-        #self.crash_again = False
         return
 
 if __name__ == "__main__":
