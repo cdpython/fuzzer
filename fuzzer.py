@@ -199,7 +199,7 @@ class file_fuzzer:
                 shutil.copy(self.tmp_file, "crash\\crash_%d%s" % (self.crash_count,self.ext))
 
                 # 로그 추가 기록
-                f = open("crash\\crash-%d.log" % self.crash_count, 'a')
+                f = open("crash\\crash_%d.log" % self.crash_count, 'a')
                 f.write("\n\n---------------- Check this Offset!! ------------------\n\n")
                 for i in self.mutate_list:
                     f.write("offset : "+ hex(i[0])+", 0x"+i[1] + "\n" )
@@ -266,6 +266,11 @@ class file_fuzzer:
             self.crash_tracking = False
             self.selected_list = []
             self.tracking_count = 0
+            #eip 리스트를 비운다. (pop을 할까?)
+            self.eip_list = []
+            #트래킹 실패한 파일 삭제
+            os.remove("crash\\%d_orig.hwp" % self.crash_count)
+            os.remove("crash\\crash-%d.log" % self.crash_count)
             return
         
         # 피봇을 기준으로 좌우로 나눈다.
